@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>hri_stretch</name>
+  <version>0.1</version>
+  <description>The stretch_funmap package</description>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>rospy</build_depend>
+  <build_export_depend>rospy</build_export_depend>
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>ros_numpy</exec_depend>
+</package>
