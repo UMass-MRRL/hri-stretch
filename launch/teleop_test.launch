@@ -7,7 +7,7 @@
   <!-- -->
     
   <!-- KEYBOARD TELEOP -->
-  <node name="keyboard_teleop" pkg="stretch_core" type="keyboard_teleop" output="screen" args=''/>
+  <node name="teleop_test" pkg="hri_stretch" type="teleop_test" output="screen" args=''/>
   <!-- -->
     
 </launch>
