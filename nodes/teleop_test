@@ -26,6 +26,19 @@ class KeyboardTeleopNode(hm.HelloNode):
         self.grasp_object_on = grasp_object_on
         self.deliver_object_on = deliver_object_on
 
+        self.step_size = 'medium'
+        self.rad_per_deg = math.pi/180.0
+        self.small_deg = 3.0
+        self.small_rad = self.rad_per_deg * self.small_deg
+        self.small_translate = 0.005  #0.02
+        self.medium_deg = 6.0
+        self.medium_rad = self.rad_per_deg * self.medium_deg
+        self.medium_translate = 0.04
+        self.big_deg = 12.0
+        self.big_rad = self.rad_per_deg * self.big_deg
+        self.big_translate = 0.06
+        self.mode = 'position' #'manipulation' #'navigation'
+
     def joint_states_callback(self, joint_state):
         self.joint_state = joint_state
 
