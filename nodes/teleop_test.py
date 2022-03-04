@@ -129,3 +129,27 @@ class KeyboardTeleopNode(hm.HelloNode):
                 command = {'joint': 'translate_mobile_base', 'inc': deltas['translate']}
                 self.send_command(command)
             rate.sleep()
+
+
+if __name__ == '__main__':
+    try:
+        parser = ap.ArgumentParser(description='Keyboard teleoperation for stretch.')
+        parser.add_argument('--mapping_on', action='store_true', help='Turn on mapping control. For example, the space bar will trigger a head scan. This requires that the mapping node be run (funmap).')
+        parser.add_argument('--hello_world_on', action='store_true', help='Enable Hello World writing trigger, which requires connection to the appropriate hello_world service.')
+        parser.add_argument('--open_drawer_on', action='store_true', help='Enable Open Drawer trigger, which requires connection to the appropriate open_drawer service.')
+        parser.add_argument('--clean_surface_on', action='store_true', help='Enable Clean Surface trigger, which requires connection to the appropriate clean_surface service.')
+        parser.add_argument('--grasp_object_on', action='store_true', help='Enable Grasp Object trigger, which requires connection to the appropriate grasp_object service.')
+        parser.add_argument('--deliver_object_on', action='store_true', help='Enable Deliver Object trigger, which requires connection to the appropriate deliver_object service.')
+
+        args, unknown = parser.parse_known_args()
+        mapping_on = args.mapping_on
+        hello_world_on = args.hello_world_on
+        open_drawer_on = args.open_drawer_on
+        clean_surface_on = args.clean_surface_on
+        grasp_object_on = args.grasp_object_on
+        deliver_object_on = args.deliver_object_on
+
+        node = KeyboardTeleopNode(mapping_on, hello_world_on, open_drawer_on, clean_surface_on, grasp_object_on, deliver_object_on)
+        node.main()
+    except KeyboardInterrupt:
+        rospy.loginfo('interrupt received, so shutting down')
