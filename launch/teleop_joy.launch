@@ -1,10 +1,11 @@
 <launch>
 
     <arg name="teleop_type" default="joystick" doc="how to teleop ('keyboard', 'joystick', or 'none')" />
-    <arg name="linear" default="0.04" doc="linear speed (m/s)" />
-    <arg name="angular" default="0.1" doc="angular speed (rad/s)" />
+    <arg name="linear" default="0.2" doc="linear speed (m/s)" />
+    <arg name="angular" default="0.5" doc="angular speed (rad/s)" />
     <arg name="twist_topic" default="/stretch/cmd_vel" doc="topic to command Twist messages" />
     <arg name="joystick_port" default="/dev/input/js0" doc="joystick USB device name" />
+    <arg name="mode" default="navigation" doc="mode to set stretch_driver to" />
 
     <!-- KEYBOARD TELEOP -->
     <group if="$(eval teleop_type == 'keyboard')">
@@ -23,7 +24,7 @@
             <param name="deadzone" value="0.05" />
         </node>
         <node name="teleop_twist_joy" pkg="teleop_twist_joy" type="teleop_node">
-            <param name="enable_button" type="int" value="0" /> <!-- value="0" to enable deadman button -->
+            <param name="enable_button" type="int" value="5" /> <!-- value="0" to enable deadman button -->
             <param name="scale_linear" type="double" value="$(arg linear)" />
             <param name="scale_angular" type="double" value="$(arg angular)" />
             <remap from="/cmd_vel" to="$(arg twist_topic)" />
@@ -44,13 +45,13 @@
         <param name="publish_frequency" value="15.0" />
     </node>
 
-    <node name="stretch_driver" pkg="stretch_core" type="stretch_driver" output="screen">
+    <node name="stretch_driver" pkg="hri_stretch" type="stretch_driver" output="screen">
         <param name="rate" type="double" value="25.0" />
         <param name="timeout" type="double" value="0.5" />
         <remap from="cmd_vel" to="/stretch/cmd_vel" />
         <remap from="joint_states" to="/stretch/joint_states" />
         <param name="controller_calibration_file" type="string" value="$(arg calibrated_controller_yaml_file)" />
-        <param name="mode" type="string" value="navigation" />
+        <param name="mode" type="string" value="$(arg mode)" />
     </node>
 
     <node name="aggregator_node" pkg="diagnostic_aggregator" type="aggregator_node">

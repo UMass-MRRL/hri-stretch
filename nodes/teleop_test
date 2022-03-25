@@ -42,7 +42,7 @@ class KeyboardTeleopNode(hm.HelloNode):
     def joint_states_callback(self, joint_state):
         self.joint_state = joint_state
 
-    def send_command(self, command):
+    def send_command(self, command, return_before_done=True):
         joint_state = self.joint_state
         if (joint_state is not None) and (command is not None):
             point = JointTrajectoryPoint()
@@ -64,6 +64,8 @@ class KeyboardTeleopNode(hm.HelloNode):
             trajectory_goal.trajectory.points = [point]
             trajectory_goal.trajectory.header.stamp = rospy.Time.now()
             self.trajectory_client.send_goal(trajectory_goal)
+            if not return_before_done:
+                self.trajectory_client.wait_for_result()
 
     def main(self):
         hm.HelloNode.main(self, 'keyboard_teleop', 'keyboard_teleop', wait_for_first_pointcloud=False)
@@ -140,7 +142,12 @@ class KeyboardTeleopNode(hm.HelloNode):
                 # command = self.keys.get_command(self)
                 deltas = {'rad': self.small_rad, 'translate': self.small_translate}
                 command = {'joint': 'translate_mobile_base', 'inc': deltas['translate']}
-                self.send_command(command)
+                print(command)
+                command['inc'] = 0.5
+                # self.send_command(command, False)
+                pose = {'joint_lift': 1.0}
+                self.move_to_pose(pose)
+                break
             rate.sleep()
 
 
