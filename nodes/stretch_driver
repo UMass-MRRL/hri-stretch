@@ -55,11 +55,15 @@ class StretchBodyNode:
     ###### MOBILE BASE VELOCITY METHODS #######
 
     def set_arm_velocity_callback(self, joy_in):
-        self.lift_delta = joy_in.axes[4]
+        self.lift_delta = joy_in.axes[4]            
         self.arm_delta = -joy_in.axes[3]
         self.wrist_left = joy_in.axes[2] < -0.1
         self.wrist_right = joy_in.axes[5] < -0.1
         self.stow_button = joy_in.buttons[3]
+        self.gripper_close = joy_in.buttons[0]
+        self.gripper_open = joy_in.buttons[1]
+        self.head_pan_left = joy_in.axes[6]
+        self.head_tilt_up = joy_in.axes[7]
         # print(joy_in)
 
     def set_mobile_base_velocity_callback(self, twist):
@@ -94,10 +98,12 @@ class StretchBodyNode:
             lift_target_vel = 0.1 * self.lift_delta
             max_lift = 1.0
             min_lift = 0.2
-            if (lift_target_vel > 0):
+            if (lift_target_vel > 0.01):
                 self.robot.lift.move_to(max_lift, lift_target_vel)
-            else:
+            elif lift_target_vel < -0.01:
                 self.robot.lift.move_to(min_lift, lift_target_vel)
+            else:
+                self.robot.lift.set_velocity(0, 0.3)
             # arm
             arm_target_vel = 0.1 * self.arm_delta
             max_arm = 0.4
@@ -115,12 +121,45 @@ class StretchBodyNode:
                 self.robot.end_of_arm.get_joint('wrist_yaw').move_to(min_wrist)
             else:
                 self.robot.end_of_arm.get_joint('wrist_yaw').quick_stop()
+            # gripper
+            max_gripper = -50
+            min_gripper = 30
+            if (self.gripper_close):
+                # self.robot.end_of_arm.get_joint('stretch_gripper').move_to(max_gripper)
+                self.robot.end_of_arm.get_joint('stretch_gripper').pose('close')
+            elif (self.gripper_open):
+                # self.robot.end_of_arm.get_joint('stretch_gripper').move_to(min_gripper)
+                self.robot.end_of_arm.get_joint('stretch_gripper').pose('open')
+            else:
+                self.robot.end_of_arm.get_joint('stretch_gripper').quick_stop()
+            # head pan
+            max_head_pan = 0
+            min_head_pan = -3.14
+            if (self.head_pan_left > 0.1):
+                self.robot.head.move_to('head_pan', max_head_pan)
+            elif (self.head_pan_left < -0.1):
+                self.robot.head.move_to('head_pan', min_head_pan)
+            else:
+                self.robot.head.get_joint('head_pan').quick_stop()
+            # head pan
+            max_head_pan = 0
+            min_head_pan = -1.57
+            if (self.head_tilt_up > 0.1):
+                self.robot.head.move_to('head_tilt', max_head_pan)
+            elif (self.head_tilt_up < -0.1):
+                self.robot.head.move_to('head_tilt', min_head_pan)
+            else:
+                self.robot.head.get_joint('head_tilt').quick_stop()
+
             self.robot.push_command()
         else:
             # Watchdog timer stops motion if no communication within timeout
             self.robot.lift.set_velocity(0.0)
             self.robot.arm.set_velocity(0.0)
             self.robot.end_of_arm.get_joint('wrist_yaw').quick_stop()
+            self.robot.end_of_arm.get_joint('stretch_gripper').quick_stop()
+            self.robot.head.get_joint('head_pan').quick_stop()
+            self.robot.head.get_joint('head_tilt').quick_stop()
             self.robot.push_command()
         
         # Enable stow
