@@ -21,7 +21,7 @@ import actionlib
 from control_msgs.msg import FollowJointTrajectoryAction
 from control_msgs.msg import FollowJointTrajectoryResult
 
-from std_srvs.srv import Trigger, TriggerResponse
+from std_srvs.srv import Trigger, TriggerRequest, TriggerResponse
 from std_srvs.srv import SetBool, SetBoolResponse
 
 from nav_msgs.msg import Odometry
@@ -60,15 +60,18 @@ class StretchBodyNode:
     ###### MOBILE BASE VELOCITY METHODS #######
 
     def set_arm_velocity_callback(self, joy_in):
-        self.lift_delta = joy_in.axes[4]            
         self.arm_delta = -joy_in.axes[3]
+        self.lift_delta = joy_in.axes[4]            
         self.wrist_left = joy_in.axes[2] < -0.1
         self.wrist_right = joy_in.axes[5] < -0.1
-        self.stow_button = joy_in.buttons[3]
-        self.gripper_close = joy_in.buttons[0]
-        self.gripper_open = joy_in.buttons[1]
         self.head_pan_left = joy_in.axes[6]
         self.head_tilt_up = joy_in.axes[7]
+
+        self.gripper_close = joy_in.buttons[0]
+        self.gripper_open = joy_in.buttons[1]
+        self.stow_button = joy_in.buttons[3]
+        self.deliver_object_button = joy_in.buttons[6]
+        self.grasp_object_button = joy_in.buttons[7]
         # print(joy_in)
 
     def set_mobile_base_velocity_callback(self, twist):
@@ -170,6 +173,18 @@ class StretchBodyNode:
         # Enable stow
         if (self.stow_button):
             self.robot.stow()
+
+        # Enable grasp object
+        if (self.grasp_object_button):
+            trigger_request = TriggerRequest() 
+            trigger_result = self.trigger_grasp_object_service(trigger_request)
+            rospy.loginfo('trigger_result = {0}'.format(trigger_result))
+
+        # # Enable deliver object
+        # if (self.deliver_object_button):
+        #     trigger_request = TriggerRequest() 
+        #     trigger_result = self.trigger_deliver_object_service(trigger_request)
+        #     rospy.loginfo('trigger_result = {0}'.format(trigger_result))
 
         # TODO: In the future, consider using time stamps from the robot's
         # motor control boards and other boards. These would need to
@@ -549,6 +564,14 @@ class StretchBodyNode:
         self.runstop_service = rospy.Service('/runstop',
                                               SetBool,
                                               self.runstop_service_callback)
+
+        rospy.wait_for_service('/grasp_object/trigger_grasp_object')
+        rospy.loginfo('Node ' + self.node_name + ' connected to /grasp_object/trigger_grasp_object.')
+        self.trigger_grasp_object_service = rospy.ServiceProxy('/grasp_object/trigger_grasp_object', Trigger)
+
+        # rospy.wait_for_service('/deliver_object/trigger_deliver_object')
+        # rospy.loginfo('Node ' + self.node_name + ' connected to /deliver_object/trigger_deliver_object.')
+        # self.trigger_deliver_object_service = rospy.ServiceProxy('/deliver_object/trigger_deliver_object', Trigger)
 
         try:
             # start loop to command the mobile base velocity, publish

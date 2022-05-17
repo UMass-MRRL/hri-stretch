@@ -1,0 +1,90 @@
+<launch>
+
+    <arg name="debug_directory" value="$(env HELLO_FLEET_PATH)/debug/" />
+    <arg name="teleop_type" default="joystick" doc="how to teleop ('keyboard', 'joystick', or 'none')" />
+    <arg name="linear" default="0.2" doc="linear speed (m/s)" />
+    <arg name="angular" default="0.5" doc="angular speed (rad/s)" />
+    <arg name="twist_topic" default="/stretch/cmd_vel" doc="topic to command Twist messages" />
+    <arg name="joystick_port" default="/dev/input/js0" doc="joystick USB device name" />
+    <arg name="mode" default="navigation" doc="mode to set stretch_driver to" />
+
+    <!-- REALSENSE D435i -->
+    <include file="$(find stretch_core)/launch/d435i_high_resolution.launch"></include>
+    <node name="d435i_configure" pkg="stretch_core" type="d435i_configure" output="screen">
+        <!--<param name="initial_mode" type="string" value="Default"/>-->
+        <param name="initial_mode" type="string" value="High Accuracy" />
+    </node>
+    <!-- -->
+
+    <!-- MAPPING -->
+    <node name="funmap" pkg="stretch_funmap" type="funmap" output="screen">
+        <param name="debug_directory" type="string" value="$(arg debug_directory)" />
+    </node>
+    <!-- -->
+
+    <!-- LASER RANGE FINDER -->
+    <include file="$(find stretch_core)/launch/rplidar.launch" />
+    <!-- -->
+
+    <!-- LASER SCAN MATCHER FOR ODOMETRY -->
+    <include file="$(find stretch_core)/launch/stretch_scan_matcher.launch" />
+    <!-- -->
+
+    <!-- GRASP OBJECT -->
+    <node name="grasp_object" pkg="stretch_demos" type="grasp_object" output="screen">
+        <param name="debug_directory" type="string" value="$(arg debug_directory)" />
+    </node>
+    <!-- -->
+
+    <!-- KEYBOARD TELEOP -->
+    <group if="$(eval teleop_type == 'keyboard')">
+        <node name="teleop_twist_keyboard" pkg="teleop_twist_keyboard" type="teleop_twist_keyboard.py" output="screen">
+            <param name="speed" type="double" value="$(arg linear)" />
+            <param name="turn" type="double" value="$(arg angular)" />
+            <remap from="/cmd_vel" to="$(arg twist_topic)" />
+        </node>
+    </group>
+
+    <!-- JOYSTICK TELEOP -->
+    <group if="$(eval teleop_type == 'joystick')">
+        <node name="joy" pkg="joy" type="joy_node" output="screen">
+            <param name="dev" value="$(arg joystick_port)" />
+            <param name="autorepeat_rate" value="20" />
+            <param name="deadzone" value="0.05" />
+        </node>
+        <node name="teleop_twist_joy" pkg="teleop_twist_joy" type="teleop_node">
+            <param name="enable_button" type="int" value="5" /> <!-- value="0" to enable deadman button -->
+            <param name="scale_linear" type="double" value="$(arg linear)" />
+            <param name="scale_angular" type="double" value="$(arg angular)" />
+            <remap from="/cmd_vel" to="$(arg twist_topic)" />
+        </node>
+    </group>
+
+    <param name="robot_description" textfile="$(find stretch_description)/urdf/stretch.urdf" />
+    <arg name="calibrated_controller_yaml_file" value="$(find stretch_core)/config/controller_calibration_head.yaml" />
+
+    <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
+        <param name="rate" value="15.0" />
+        <rosparam param="source_list">
+      [/stretch/joint_states]
+    </rosparam>
+    </node>
+
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher">
+        <param name="publish_frequency" value="15.0" />
+    </node>
+
+    <node name="stretch_driver_demos" pkg="hri_stretch" type="stretch_driver_demos" output="screen">
+        <param name="rate" type="double" value="25.0" />
+        <param name="timeout" type="double" value="0.5" />
+        <remap from="cmd_vel" to="/stretch/cmd_vel" />
+        <remap from="joint_states" to="/stretch/joint_states" />
+        <param name="controller_calibration_file" type="string" value="$(arg calibrated_controller_yaml_file)" />
+        <param name="mode" type="string" value="$(arg mode)" />
+    </node>
+
+    <node name="aggregator_node" pkg="diagnostic_aggregator" type="aggregator_node">
+        <rosparam command="load" file="$(find stretch_core)/config/diagnostics.yaml" />
+    </node>
+
+</launch>
